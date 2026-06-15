@@ -3,10 +3,12 @@ import socketio
 sio = socketio.Client()
 
 def connect_socket():
-    if not sio.connected:
+    try:
         sio.connect("http://localhost:5000")
-        print("Connected to socket server")
-
+        print("Socket connected")
+    except Exception as e:
+        print("Socket unavailable:", e)
+        
 def disconnect_socket():
     if sio.connected:
         sio.disconnect()
