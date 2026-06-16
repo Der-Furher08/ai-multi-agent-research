@@ -1,31 +1,15 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-
 from pipeline import run_research_pipeline
-from socket_client import connect_socket
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    connect_socket()
-    yield
-
-
-app = FastAPI(lifespan=lifespan)
-
+app = FastAPI()
 
 class ResearchRequest(BaseModel):
     topic: str
 
-
 @app.get("/")
 def home():
-    return {
-        "message": "AI Multi-Agent Research API Running"
-    }
-
+    return {"message": "AI Multi-Agent Research API Running"}
 
 @app.post("/research")
 def research(request: ResearchRequest):
@@ -38,7 +22,4 @@ def research(request: ResearchRequest):
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,44 +1,55 @@
-require("dotenv").config();
+import express from "express";
+import http from "http";
+import cors from "cors";
+import axios from "axios";
+import { Server } from "socket.io";
 
-const http = require("http");
-const { Server } = require("socket.io");
-const { setIO } = require("./services/socketService");
+const app = express();
+app.use(cors());
 
-const app = require("./app");
-
-// Create HTTP server
 const server = http.createServer(app);
 
-// Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
+    origin: "*",
   },
 });
 
-// Register socket instance
-setIO(io);
-// Listen for client connection
+console.log("🚀 Node Socket Server Running");
+
 io.on("connection", (socket) => {
-  console.log("🔌 Socket connected:", socket.id);
+  console.log("🟢 Client connected:", socket.id);
 
-  // Receive events from Python client
-  socket.on("agent-progress", (data) => {
-    console.log("📩 Agent Update:", data);
+  socket.on("research", async (topic) => {
+    console.log("📩 Topic:", topic);
 
-    // Broadcast to all React clients
-    io.emit("agent-progress", data);
+    try {
+      // call fastapi
+      const response = await axios.post(
+        "https://YOUR-AI-SERVICE.onrender.com/research",
+        { topic }
+      );
+
+      const text = JSON.stringify(response.data.data);
+
+      // 🔥 STREAM SIMULATION
+      for (let i = 0; i < text.length; i++) {
+        await new Promise((r) => setTimeout(r, 10));
+        socket.emit("research-stream", text[i]);
+      }
+
+      socket.emit("research-end", "DONE");
+    } catch (err) {
+      console.log(err.message);
+      socket.emit("research-error", "Failed to generate research");
+    }
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ Socket disconnected:", socket.id);
+    console.log("❌ disconnected");
   });
 });
 
-const PORT = process.env.PORT || 5000;
-
-// Start server
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+server.listen(process.env.PORT || 5000, () => {
+  console.log("✅ Server started");
 });

@@ -2,24 +2,20 @@ import { io } from "socket.io-client";
 
 console.log("⚡ socket.js loaded");
 
-const socket = io("http://localhost:5000", {
-  transports: ["websocket", "polling"],
-  autoConnect: true,
+const socket = io("https://ai-multi-agent-research-backend.onrender.com", {
+  transports: ["websocket"],
   reconnection: true,
-  timeout: 5000,
+  timeout: 10000,
 });
 
-// Connected
 socket.on("connect", () => {
   console.log("🟢 SOCKET CONNECTED:", socket.id);
 });
 
-// Connection error
 socket.on("connect_error", (error) => {
   console.log("🔴 SOCKET ERROR:", error.message);
 });
 
-// Disconnected
 socket.on("disconnect", (reason) => {
   console.log("❌ SOCKET DISCONNECTED:", reason);
 });

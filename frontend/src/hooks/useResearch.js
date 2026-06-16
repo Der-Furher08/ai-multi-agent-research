@@ -1,33 +1,34 @@
 import { useState } from "react";
-import { startResearch } from "../services/researchService";
+import socket from "../socket";
 
-function useResearch() {
+export default function useResearch() {
   const [loading, setLoading] = useState(false);
-  const [research, setResearch] = useState(null);
+  const [research, setResearch] = useState("");
   const [error, setError] = useState("");
 
-  const generateResearch = async (topic) => {
-    try {
-      setLoading(true);
-      setError("");
-      setResearch(null);
+  const generateResearch = (topic) => {
+    setLoading(true);
+    setResearch("");
+    setError("");
 
-      const response = await startResearch(topic);
-
-      setResearch(response.data);
-
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.response?.data?.message ||
-        "Failed to generate research"
-      );
-
-    } finally {
-      setLoading(false);
-    }
+    // IMPORTANT: THIS MUST MATCH BACKEND EVENT NAME
+    socket.emit("research", topic);
   };
+
+  // listen once
+  socket.on("research-stream", (chunk) => {
+    setResearch((prev) => prev + chunk);
+    setLoading(false);
+  });
+
+  socket.on("research-end", () => {
+    setLoading(false);
+  });
+
+  socket.on("research-error", (msg) => {
+    setError(msg);
+    setLoading(false);
+  });
 
   return {
     loading,
@@ -36,5 +37,3 @@ function useResearch() {
     generateResearch,
   };
 }
-
-export default useResearch;

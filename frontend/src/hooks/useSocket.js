@@ -1,72 +1,39 @@
 import { useEffect, useState } from "react";
-import socket from "../services/socket";
+import socket from "../socket";
 
-function useSocket() {
-
-  console.log("🚀 useSocket Hook Running");
-
+export default function useSocket() {
   const [connected, setConnected] = useState(false);
-  const [progress, setProgress] = useState([]);
+  const [progress, setProgress] = useState("");
 
   useEffect(() => {
-
-    const handleConnect = () => {
-      console.log("🟢 Connected in hook:", socket.id);
+    socket.on("connect", () => {
       setConnected(true);
-    };
+    });
 
-
-    const handleDisconnect = () => {
-      console.log("🔴 Disconnected from hook");
+    socket.on("disconnect", () => {
       setConnected(false);
-    };
+    });
 
+    socket.on("research-stream", (chunk) => {
+      setProgress((prev) => prev + chunk);
+    });
 
-    const handleProgress = (data) => {
-      console.log("🤖 Agent Progress:", data);
+    socket.on("research-end", () => {
+      console.log("stream finished");
+    });
 
-      setProgress((prev) => [
-        ...prev,
-        data
-      ]);
-    };
-
-
-    socket.on("connect", handleConnect);
-
-    socket.on("disconnect", handleDisconnect);
-
-    socket.on("agent-progress", handleProgress);
-
-
-    // If already connected
-    if (socket.connected) {
-      setConnected(true);
-    }
-
+    socket.on("research-error", (msg) => {
+      console.log("error:", msg);
+    });
 
     return () => {
-      socket.off("connect", handleConnect);
-
-      socket.off("disconnect", handleDisconnect);
-
-      socket.off("agent-progress", handleProgress);
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("research-stream");
+      socket.off("research-end");
+      socket.off("research-error");
     };
-
   }, []);
 
-
-  const clearProgress = () => {
-    setProgress([]);
-  };
-
-
-  return {
-    connected,
-    progress,
-    clearProgress
-  };
+  return { connected, progress, setProgress };
 }
-
-
-export default useSocket;
